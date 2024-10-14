@@ -1,0 +1,40 @@
+name: Mirror on GitLab
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [ "main" ]
+
+jobs:
+  sync_to_gitlab:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Extract repository name
+        id: extract_repo_name
+        run: echo "REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)" >> $GITHUB_ENV
+        
+      - name: Set up Git
+        run: |
+          git config --global user.name "${{ secrets.GITLAB_USER }}"
+          git config --global user.email "${{ secrets.GITLAB_EMAIL }}"
+        env:
+          GITLAB_USER: ${{ secrets.GITLAB_USER }}
+          GITLAB_EMAIL: ${{ secrets.GITLAB_EMAIL }}
+
+      - name: Remove shallow update
+        run: git fetch --prune --unshallow
+
+      - name: Pull from GitLab
+        run: |
+          git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.com/ws2git/${{ env.REPO_NAME }}.git
+          git fetch gitlab
+          git pull gitlab main --rebase
+
+      - name: Sync to GitLab
+        run: |
+          git push gitlab main
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}

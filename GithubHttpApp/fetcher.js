@@ -20,7 +20,7 @@ async function fetcher(GH_TOKEN, URL) {
     const response = await UrlFetchApp.fetch(pageUrl, options);
 
     if (response.getResponseCode() !== 200) {
-      throw new Error(`API request failed with status ${response.getResponseCode()}: ${response.getContentText()}`);
+      return handleHttpStatus(response.getResponseCode());
     }
 
     const data = JSON.parse(response.getContentText());
